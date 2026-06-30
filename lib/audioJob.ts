@@ -105,7 +105,90 @@ function compactToolName(value: string) {
   return value.split(/[\\/]/).at(-1) || value;
 }
 
+function classifyYtDlpFailure(fallbackCode: string, output: string) {
+  if (fallbackCode !== "AUDIO_EXTRACTION_FAILED" && fallbackCode !== "AUDIO_METADATA_FAILED") {
+    return fallbackCode;
+  }
+
+  const lowered = output.toLowerCase();
+
+  if (
+    lowered.includes("sign in to confirm you're not a bot") ||
+    lowered.includes("confirm you're not a bot") ||
+    lowered.includes("not a bot") ||
+    lowered.includes("http error 403") ||
+    lowered.includes("403 forbidden") ||
+    lowered.includes("error 403") ||
+    lowered.includes("too many requests") ||
+    lowered.includes("http error 429")
+  ) {
+    return "YOUTUBE_SERVER_BLOCKED";
+  }
+
+  if (
+    lowered.includes("private video") ||
+    lowered.includes("video unavailable") ||
+    lowered.includes("this video is unavailable") ||
+    lowered.includes("has been removed") ||
+    lowered.includes("copyright claim")
+  ) {
+    return "YOUTUBE_VIDEO_UNAVAILABLE";
+  }
+
+  if (
+    lowered.includes("sign in to confirm your age") ||
+    lowered.includes("age-restricted") ||
+    lowered.includes("login required") ||
+    lowered.includes("members-only") ||
+    lowered.includes("members only") ||
+    lowered.includes("not available in your country") ||
+    lowered.includes("geo restricted")
+  ) {
+    return "YOUTUBE_RESTRICTED";
+  }
+
+  if (
+    lowered.includes("requested format is not available") ||
+    lowered.includes("no video formats found") ||
+    lowered.includes("no suitable formats")
+  ) {
+    return "YOUTUBE_AUDIO_FORMAT_UNAVAILABLE";
+  }
+
+  if (
+    lowered.includes("unable to extract") ||
+    lowered.includes("signature extraction failed") ||
+    lowered.includes("nsig extraction failed") ||
+    lowered.includes("failed to extract") ||
+    lowered.includes("expected jsplayer")
+  ) {
+    return "YTDLP_EXTRACTOR_OUTDATED";
+  }
+
+  return fallbackCode;
+}
+
 function toolFailureMessage(label: string, code: string) {
+  if (code === "YOUTUBE_SERVER_BLOCKED") {
+    return `${label} 요청을 YouTube가 거부했습니다. Render 같은 클라우드 서버 IP에서 발생할 수 있습니다.`;
+  }
+
+  if (code === "YOUTUBE_VIDEO_UNAVAILABLE") {
+    return "YouTube 영상이 비공개, 삭제, 또는 접근 불가 상태입니다.";
+  }
+
+  if (code === "YOUTUBE_RESTRICTED") {
+    return "이 YouTube 영상은 로그인, 연령, 멤버십, 지역 제한 때문에 서버에서 오디오를 추출할 수 없습니다.";
+  }
+
+  if (code === "YOUTUBE_AUDIO_FORMAT_UNAVAILABLE") {
+    return "이 영상에서 사용할 수 있는 오디오 포맷을 찾지 못했습니다.";
+  }
+
+  if (code === "YTDLP_EXTRACTOR_OUTDATED") {
+    return "yt-dlp가 현재 YouTube 응답을 해석하지 못했습니다. Docker 이미지를 다시 빌드해 yt-dlp를 최신화해 주세요.";
+  }
+
   if (code === "AUDIO_EXTRACTION_FAILED") {
     return `${label}에 실패했습니다. 공개 영상인지, YouTube 접근 제한 또는 yt-dlp 설정을 확인해 주세요.`;
   }
@@ -388,10 +471,14 @@ function runCommand(
         stderr: compactToolOutput(stderr),
         stdout: compactToolOutput(stdout)
       });
+      const effectiveFailureCode = classifyYtDlpFailure(
+        failureCode,
+        `${stderr}\n${stdout}`
+      );
       reject(
         new AppError(
-          failureCode,
-          toolFailureMessage(label, failureCode),
+          effectiveFailureCode,
+          toolFailureMessage(label, effectiveFailureCode),
           500
         )
       );

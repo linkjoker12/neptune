@@ -104,6 +104,16 @@ export const en = {
         "Audio analysis failed, but the converted file and text-based results are shown.",
       AUDIO_EXTRACTION_FAILED:
         "Audio extraction failed, so only title, description, and comment results are shown.",
+      YOUTUBE_SERVER_BLOCKED:
+        "YouTube rejected the server's audio download request. This can happen from cloud server IPs such as Render, so a different server environment or deployment path may be needed.",
+      YOUTUBE_VIDEO_UNAVAILABLE:
+        "This YouTube video is private, removed, or unavailable, so audio cannot be extracted.",
+      YOUTUBE_RESTRICTED:
+        "This video requires login, age verification, membership, or region access, so the server cannot extract audio.",
+      YOUTUBE_AUDIO_FORMAT_UNAVAILABLE:
+        "No usable audio format was found for this video, so only text-based results are shown.",
+      YTDLP_EXTRACTOR_OUTDATED:
+        "yt-dlp could not parse the current YouTube response. Rebuild the Docker image to update yt-dlp.",
       AUDIO_ANALYSIS_SAMPLE_FAILED:
         "The analysis audio sample could not be created, so only title, description, and comment results are shown.",
       AUDIO_CONVERSION_FAILED:
@@ -190,6 +200,16 @@ export const en = {
         "Audio tools could not be executed. Check the local installation or Docker environment.",
       AUDIO_EXTRACTION_FAILED:
         "YouTube audio could not be extracted. Check whether the video is public, YouTube access is limited, or yt-dlp is configured correctly.",
+      YOUTUBE_SERVER_BLOCKED:
+        "YouTube rejected the server's audio download request. This can happen from cloud server IPs such as Render.",
+      YOUTUBE_VIDEO_UNAVAILABLE:
+        "This YouTube video is private, removed, or unavailable.",
+      YOUTUBE_RESTRICTED:
+        "This video requires login, age verification, membership, or region access, so the server cannot extract audio.",
+      YOUTUBE_AUDIO_FORMAT_UNAVAILABLE:
+        "No usable audio format was found for this video.",
+      YTDLP_EXTRACTOR_OUTDATED:
+        "yt-dlp could not parse the current YouTube response. Rebuild the Docker image to update yt-dlp.",
       AUDIO_ANALYSIS_SAMPLE_FAILED:
         "The analysis audio sample could not be created. Check ffmpeg and the extracted source audio.",
       AUDIO_CONVERSION_FAILED:

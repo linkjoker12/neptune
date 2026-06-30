@@ -103,6 +103,16 @@ export const ko = {
         "오디오 분석은 실패했지만 변환 파일과 텍스트 기반 결과를 표시합니다.",
       AUDIO_EXTRACTION_FAILED:
         "오디오 추출에 실패해 제목, 설명, 댓글 기반 결과만 표시합니다.",
+      YOUTUBE_SERVER_BLOCKED:
+        "YouTube가 서버의 오디오 다운로드 요청을 거부했습니다. Render 같은 클라우드 서버 IP에서 발생할 수 있어, 다른 서버 환경이나 배포 방식을 사용해야 할 수 있습니다.",
+      YOUTUBE_VIDEO_UNAVAILABLE:
+        "이 YouTube 영상은 비공개, 삭제, 또는 접근 불가 상태라 오디오를 추출할 수 없습니다.",
+      YOUTUBE_RESTRICTED:
+        "이 영상은 로그인, 연령, 멤버십, 지역 제한 때문에 서버에서 오디오를 추출할 수 없습니다.",
+      YOUTUBE_AUDIO_FORMAT_UNAVAILABLE:
+        "이 영상에서 사용할 수 있는 오디오 포맷을 찾지 못해 텍스트 기반 결과만 표시합니다.",
+      YTDLP_EXTRACTOR_OUTDATED:
+        "yt-dlp가 현재 YouTube 응답을 해석하지 못했습니다. Docker 이미지를 다시 빌드해 yt-dlp를 최신화해 주세요.",
       AUDIO_ANALYSIS_SAMPLE_FAILED:
         "분석용 오디오 샘플 생성에 실패해 제목, 설명, 댓글 기반 결과만 표시합니다.",
       AUDIO_CONVERSION_FAILED:
@@ -192,6 +202,16 @@ export const ko = {
         "오디오 도구를 실행할 수 없습니다. 로컬 설치 또는 Docker 환경을 확인해 주세요.",
       AUDIO_EXTRACTION_FAILED:
         "YouTube 오디오를 추출하지 못했습니다. 공개 영상인지, YouTube 접근 제한 또는 yt-dlp 설정을 확인해 주세요.",
+      YOUTUBE_SERVER_BLOCKED:
+        "YouTube가 서버의 오디오 다운로드 요청을 거부했습니다. Render 같은 클라우드 서버 IP에서 발생할 수 있습니다.",
+      YOUTUBE_VIDEO_UNAVAILABLE:
+        "이 YouTube 영상은 비공개, 삭제, 또는 접근 불가 상태입니다.",
+      YOUTUBE_RESTRICTED:
+        "이 영상은 로그인, 연령, 멤버십, 지역 제한 때문에 서버에서 오디오를 추출할 수 없습니다.",
+      YOUTUBE_AUDIO_FORMAT_UNAVAILABLE:
+        "이 영상에서 사용할 수 있는 오디오 포맷을 찾지 못했습니다.",
+      YTDLP_EXTRACTOR_OUTDATED:
+        "yt-dlp가 현재 YouTube 응답을 해석하지 못했습니다. Docker 이미지를 다시 빌드해 yt-dlp를 최신화해 주세요.",
       AUDIO_ANALYSIS_SAMPLE_FAILED:
         "분석용 오디오 샘플을 생성하지 못했습니다. ffmpeg 설치와 오디오 원본 상태를 확인해 주세요.",
       AUDIO_CONVERSION_FAILED:

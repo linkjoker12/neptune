@@ -493,6 +493,11 @@ curl https://YOUR_RENDER_DOMAIN/api/health?tools=1
 모든 항목이 `ok`인데 오디오 분석만 실패하면 Render Logs에서 실패 단계 코드를 확인합니다.
 
 - `AUDIO_EXTRACTION_FAILED`: yt-dlp가 YouTube 오디오를 받지 못했습니다.
+- `YOUTUBE_SERVER_BLOCKED`: YouTube가 서버의 오디오 다운로드 요청을 거부했습니다. Render 같은 클라우드 서버 IP에서 `403`, `429`, 봇 확인 요청이 발생할 때 표시됩니다.
+- `YOUTUBE_VIDEO_UNAVAILABLE`: 영상이 비공개, 삭제, 또는 접근 불가 상태입니다.
+- `YOUTUBE_RESTRICTED`: 로그인, 연령, 멤버십, 지역 제한 때문에 서버에서 오디오를 추출할 수 없습니다.
+- `YOUTUBE_AUDIO_FORMAT_UNAVAILABLE`: 사용할 수 있는 오디오 포맷을 찾지 못했습니다.
+- `YTDLP_EXTRACTOR_OUTDATED`: yt-dlp가 YouTube 응답을 해석하지 못합니다. Docker 이미지를 다시 빌드해 yt-dlp를 최신화하세요.
 - `AUDIO_ANALYSIS_SAMPLE_FAILED`: ffmpeg가 분석용 wav 샘플을 만들지 못했습니다.
 - `AUDIO_WORKER_FAILED`: Python worker 또는 Python 패키지 문제가 있습니다.
 - `AUDIO_WORKER_PARSE_FAILED`: worker 출력 JSON을 해석하지 못했습니다.
