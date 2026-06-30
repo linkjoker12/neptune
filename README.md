@@ -65,6 +65,8 @@ JOB_TIMEOUT_SECONDS=900
 DOWNLOAD_BASE_URL=
 LOG_LEVEL=info
 AUDIO_ANALYSIS_SAMPLE_SECONDS=180
+YT_DLP_IMPERSONATE=chrome
+YT_DLP_EXTRACTOR_ARGS=youtube:player_client=default,ios,android,web
 ```
 
 환경변수 설명:
@@ -80,6 +82,8 @@ AUDIO_ANALYSIS_SAMPLE_SECONDS=180
 - `DOWNLOAD_BASE_URL`: 다운로드 URL을 절대 URL로 만들 때 사용. 비워 두면 상대 URL 사용
 - `LOG_LEVEL`: `debug`, `info`, `warn`, `error`, `silent`
 - `AUDIO_ANALYSIS_SAMPLE_SECONDS`: 분석 샘플 길이. 기본 180초
+- `YT_DLP_IMPERSONATE`: 클라우드 배포에서 YouTube 요청을 브라우저처럼 보내도록 하는 `yt-dlp` 옵션. Docker 기본값 `chrome`
+- `YT_DLP_EXTRACTOR_ARGS`: YouTube player client 후보를 지정하는 `yt-dlp` 옵션. Docker 기본값 `youtube:player_client=default,ios,android,web`
 
 환경변수 변경 후에는 서버를 재시작해야 합니다. Docker 배포에서는 컨테이너를 재시작하거나 재배포해야 적용됩니다.
 
@@ -329,6 +333,8 @@ TEMP_DIR=/tmp/neptune
 MAX_CONCURRENT_JOBS=2
 JOB_TIMEOUT_SECONDS=900
 LOG_LEVEL=info
+YT_DLP_IMPERSONATE=chrome
+YT_DLP_EXTRACTOR_ARGS=youtube:player_client=default,ios,android,web
 ```
 
 ### VPS 또는 DigitalOcean에 Docker로 배포
@@ -454,6 +460,8 @@ docker compose up -d --build
 ### yt-dlp가 실패할 때
 
 일부 영상은 YouTube 정책, 지역 제한, 포맷, 임시 차단 때문에 실패할 수 있습니다. `yt-dlp` 버전을 올린 뒤 Docker image를 다시 빌드하세요. 비공개 영상, 로그인 필요한 영상, DRM 우회는 지원하지 않습니다.
+
+Render 같은 클라우드 호스트에서는 YouTube가 서버 IP를 더 엄격하게 제한할 수 있습니다. 이 프로젝트는 Docker 기본값으로 `YT_DLP_IMPERSONATE=chrome`과 `YT_DLP_EXTRACTOR_ARGS=youtube:player_client=default,ios,android,web`을 사용해 공개 영상 추출 성공률을 높입니다. 그래도 특정 영상이 계속 실패하면 Render Logs에서 `audio_extraction.selector_failed` 또는 `audio_processing.failed` 주변 로그를 확인하세요.
 
 ### 영상 길이가 제한을 초과할 때
 

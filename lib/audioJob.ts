@@ -146,8 +146,43 @@ function getYtDlpFfmpegArgs() {
   return ffmpegLocation ? ["--ffmpeg-location", ffmpegLocation] : [];
 }
 
+function getYtDlpImpersonationArgs() {
+  const configured = process.env.YT_DLP_IMPERSONATE?.trim();
+  return configured ? ["--impersonate", configured] : [];
+}
+
+function getYtDlpExtractorArgs() {
+  const configured = process.env.YT_DLP_EXTRACTOR_ARGS?.trim();
+  return configured ? ["--extractor-args", configured] : [];
+}
+
+function getYtDlpNetworkArgs() {
+  return [
+    "--force-ipv4",
+    "--retries",
+    "3",
+    "--fragment-retries",
+    "3",
+    "--socket-timeout",
+    "30",
+    "--user-agent",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "--referer",
+    "https://www.youtube.com/",
+    "--add-header",
+    "Accept-Language: en-US,en;q=0.9"
+  ];
+}
+
 function getYtDlpBaseArgs() {
-  return ["--no-playlist", ...getYtDlpFfmpegArgs(), ...getYtDlpJsRuntimeArgs()];
+  return [
+    "--no-playlist",
+    ...getYtDlpNetworkArgs(),
+    ...getYtDlpFfmpegArgs(),
+    ...getYtDlpJsRuntimeArgs(),
+    ...getYtDlpImpersonationArgs(),
+    ...getYtDlpExtractorArgs()
+  ];
 }
 
 function getToolCommand(name: ToolName) {

@@ -25,9 +25,11 @@ ENV TEMP_FILE_TTL_MINUTES=30
 ENV MAX_CONCURRENT_JOBS=2
 ENV JOB_TIMEOUT_SECONDS=900
 ENV LOG_LEVEL=info
+ENV YT_DLP_IMPERSONATE=chrome
+ENV YT_DLP_EXTRACTOR_ARGS=youtube:player_client=default,ios,android,web
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates ffmpeg python3 python3-pip \
+  && apt-get install -y --no-install-recommends ca-certificates ffmpeg libgomp1 libsndfile1 python3 python3-pip \
   && rm -rf /var/lib/apt/lists/*
 
 COPY worker/requirements.txt ./worker/requirements.txt
