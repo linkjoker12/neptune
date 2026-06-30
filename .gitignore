@@ -1,0 +1,47 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+
+# local env files
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+logs/
+dev-server*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# local temp and generated media
+tmp/
+*.webm
+*.mp3
+*.wav
+*.m4a
+*.flac
+*.ogg
+*.part
+*.ytdl
+
+# Python/cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
