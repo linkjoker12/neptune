@@ -101,12 +101,28 @@ export const ko = {
         "이 영상은 길이 제한을 초과해 오디오 처리를 건너뛰었습니다.",
       AUDIO_ANALYSIS_FAILED:
         "오디오 분석은 실패했지만 변환 파일과 텍스트 기반 결과를 표시합니다.",
+      AUDIO_EXTRACTION_FAILED:
+        "오디오 추출에 실패해 제목, 설명, 댓글 기반 결과만 표시합니다.",
+      AUDIO_ANALYSIS_SAMPLE_FAILED:
+        "분석용 오디오 샘플 생성에 실패해 제목, 설명, 댓글 기반 결과만 표시합니다.",
+      AUDIO_CONVERSION_FAILED:
+        "오디오 변환에 실패해 다운로드 파일을 만들지 못했습니다. 가능한 텍스트 기반 결과만 표시합니다.",
+      AUDIO_WORKER_FAILED:
+        "오디오 BPM/Key 분석 환경을 확인해야 합니다. 변환 파일과 텍스트 기반 결과를 표시합니다.",
+      AUDIO_WORKER_PARSE_FAILED:
+        "오디오 분석 결과를 해석하지 못했습니다. 변환 파일과 텍스트 기반 결과를 표시합니다.",
+      AUDIO_METADATA_FAILED:
+        "오디오 처리를 위한 영상 정보 확인에 실패해 텍스트 기반 결과만 표시합니다.",
       AUDIO_PROCESS_FAILED:
         "오디오 처리를 완료하지 못했지만 텍스트 기반 분석 결과를 표시합니다.",
       AUDIO_QUEUE_BUSY:
         "현재 오디오 작업이 많아 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.",
       AUDIO_TOOL_UNAVAILABLE:
         "오디오 도구를 실행할 수 없습니다. 로컬 설치 또는 Docker 환경을 확인해 주세요.",
+      JOB_TIMEOUT:
+        "오디오 처리 시간이 초과되었습니다. 더 짧은 영상으로 다시 시도하거나 서버 timeout 설정을 확인해 주세요.",
+      AUDIO_SOURCE_MISSING:
+        "오디오 원본 파일을 생성하지 못해 텍스트 기반 결과만 표시합니다.",
       MISSING_YOUTUBE_API_KEY:
         "YOUTUBE_API_KEY가 없어 설명/댓글 기반 보조 분석은 제한됩니다. 오디오 BPM/Key 분석과 다운로드는 계속 진행합니다."
     }
@@ -174,11 +190,25 @@ export const ko = {
       VIDEO_NOT_FOUND: "해당 YouTube 영상을 찾을 수 없습니다.",
       AUDIO_TOOL_UNAVAILABLE:
         "오디오 도구를 실행할 수 없습니다. 로컬 설치 또는 Docker 환경을 확인해 주세요.",
+      AUDIO_EXTRACTION_FAILED:
+        "YouTube 오디오를 추출하지 못했습니다. 공개 영상인지, YouTube 접근 제한 또는 yt-dlp 설정을 확인해 주세요.",
+      AUDIO_ANALYSIS_SAMPLE_FAILED:
+        "분석용 오디오 샘플을 생성하지 못했습니다. ffmpeg 설치와 오디오 원본 상태를 확인해 주세요.",
+      AUDIO_CONVERSION_FAILED:
+        "오디오 변환에 실패했습니다. ffmpeg 설치와 선택한 오디오 포맷을 확인해 주세요.",
+      AUDIO_WORKER_FAILED:
+        "Python 오디오 분석 worker를 실행하지 못했습니다. worker 의존성을 확인해 주세요.",
+      AUDIO_WORKER_PARSE_FAILED:
+        "Python worker의 분석 결과를 해석하지 못했습니다.",
+      AUDIO_METADATA_FAILED:
+        "오디오 처리를 위한 영상 정보를 확인하지 못했습니다.",
       AUDIO_PROCESS_FAILED:
         "오디오 처리에 실패했습니다. 공개 영상인지, 권한과 서버 도구 설치 상태를 확인해 주세요.",
       AUDIO_SOURCE_MISSING: "오디오 원본 파일을 생성하지 못했습니다.",
       AUDIO_QUEUE_BUSY:
         "현재 오디오 작업이 많아 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+      JOB_TIMEOUT:
+        "오디오 처리 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
       INTERNAL_ERROR: "서버에서 분석을 처리하는 동안 문제가 발생했습니다."
     }
   }

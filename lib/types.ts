@@ -68,6 +68,7 @@ export interface AudioAnalysis {
   key: string | null;
   keyConfidence: number;
   error?: string;
+  errorCode?: string;
 }
 
 export interface DownloadFileInfo {

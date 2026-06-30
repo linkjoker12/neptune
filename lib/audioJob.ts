@@ -52,6 +52,7 @@ interface AudioStore {
     ffmpeg: boolean;
     python: boolean;
     ytDlp: boolean;
+    audioWorker: boolean;
   };
 }
 
@@ -79,6 +80,54 @@ function getMaxConcurrentAudioJobs() {
 }
 
 type ToolName = "yt-dlp" | "ffmpeg" | "python";
+
+interface YtDlpArgVariant {
+  name: string;
+  args: string[];
+}
+
+function publicErrorCode(error: unknown) {
+  return error instanceof AppError ? error.code : "UNKNOWN_ERROR";
+}
+
+function compactToolOutput(value: string) {
+  return value
+    .replace(/AIza[0-9A-Za-z_-]+/g, "[api-key]")
+    .replace(/https:\/\/www\.youtube\.com\/watch\?v=([A-Za-z0-9_-]+)[^\s"']*/g, "youtube:$1")
+    .replace(/\/tmp\/neptune\/[^\s"']+/g, "/tmp/neptune/[file]")
+    .replace(/[A-Za-z]:\\[^\r\n"']+/g, "[path]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(-1_200);
+}
+
+function compactToolName(value: string) {
+  return value.split(/[\\/]/).at(-1) || value;
+}
+
+function toolFailureMessage(label: string, code: string) {
+  if (code === "AUDIO_EXTRACTION_FAILED") {
+    return `${label}에 실패했습니다. 공개 영상인지, YouTube 접근 제한 또는 yt-dlp 설정을 확인해 주세요.`;
+  }
+
+  if (code === "AUDIO_ANALYSIS_SAMPLE_FAILED") {
+    return `${label}에 실패했습니다. ffmpeg 설치와 오디오 원본 상태를 확인해 주세요.`;
+  }
+
+  if (code === "AUDIO_CONVERSION_FAILED") {
+    return `${label}에 실패했습니다. ffmpeg 설치와 선택한 오디오 포맷을 확인해 주세요.`;
+  }
+
+  if (code === "AUDIO_WORKER_FAILED") {
+    return `${label}에 실패했습니다. Python worker와 분석 의존성을 확인해 주세요.`;
+  }
+
+  if (code === "AUDIO_METADATA_FAILED") {
+    return `${label}에 실패했습니다. 영상 접근 상태와 yt-dlp 설정을 확인해 주세요.`;
+  }
+
+  return `${label} 처리에 실패했습니다. 공개 영상인지, 권한과 서버 도구 설치 상태를 확인해 주세요.`;
+}
 
 function getBundledFfmpegPath() {
   const platform = `${process.platform}-${process.arch}`;
@@ -175,13 +224,57 @@ function getYtDlpNetworkArgs() {
 }
 
 function getYtDlpBaseArgs() {
-  return [
+  return getYtDlpBaseArgVariants()[0].args;
+}
+
+function getYtDlpBaseArgVariants(): YtDlpArgVariant[] {
+  const baseArgs = [
     "--no-playlist",
     ...getYtDlpNetworkArgs(),
     ...getYtDlpFfmpegArgs(),
-    ...getYtDlpJsRuntimeArgs(),
-    ...getYtDlpImpersonationArgs(),
-    ...getYtDlpExtractorArgs()
+    ...getYtDlpJsRuntimeArgs()
+  ];
+  const impersonationArgs = getYtDlpImpersonationArgs();
+  const extractorArgs = getYtDlpExtractorArgs();
+  const variants: YtDlpArgVariant[] = [
+    {
+      name: "configured",
+      args: [...baseArgs, ...impersonationArgs, ...extractorArgs]
+    }
+  ];
+
+  if (impersonationArgs.length > 0) {
+    variants.push({
+      name: "without_impersonation",
+      args: [...baseArgs, ...extractorArgs]
+    });
+  }
+
+  if (extractorArgs.length > 0) {
+    variants.push({
+      name: "without_extractor_args",
+      args: [...baseArgs, ...impersonationArgs]
+    });
+  }
+
+  if (impersonationArgs.length > 0 || extractorArgs.length > 0) {
+    variants.push({
+      name: "plain",
+      args: baseArgs
+    });
+  }
+
+  const seen = new Set<string>();
+  return [
+    ...variants.filter((variant) => {
+      const key = variant.args.join("\u0000");
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    })
   ];
 }
 
@@ -216,7 +309,12 @@ function getToolCommand(name: ToolName) {
   };
 }
 
-function runCommand(command: string, args: string[], label: string) {
+function runCommand(
+  command: string,
+  args: string[],
+  label: string,
+  failureCode = "AUDIO_PROCESS_FAILED"
+) {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
     let timedOut = false;
     const child = spawn(command, args, {
@@ -248,8 +346,13 @@ function runCommand(command: string, args: string[], label: string) {
       }
     });
 
-    child.on("error", () => {
+    child.on("error", (error) => {
       clearTimeout(timeout);
+      logger.warn("tool.spawn_failed", {
+        label,
+        tool: compactToolName(command),
+        message: compactToolOutput(error.message)
+      });
       reject(
         new AppError(
           "AUDIO_TOOL_UNAVAILABLE",
@@ -262,6 +365,7 @@ function runCommand(command: string, args: string[], label: string) {
     child.on("close", (code) => {
       clearTimeout(timeout);
       if (timedOut) {
+        logger.warn("tool.timeout", { label, tool: compactToolName(command) });
         reject(
           new AppError(
             "JOB_TIMEOUT",
@@ -277,10 +381,17 @@ function runCommand(command: string, args: string[], label: string) {
         return;
       }
 
+      logger.warn("tool.failed", {
+        label,
+        tool: compactToolName(command),
+        exitCode: code ?? -1,
+        stderr: compactToolOutput(stderr),
+        stdout: compactToolOutput(stdout)
+      });
       reject(
         new AppError(
-          "AUDIO_PROCESS_FAILED",
-          `${label} 처리에 실패했습니다. 공개 영상인지, 권한과 서버 도구 설치 상태를 확인해 주세요.`,
+          failureCode,
+          toolFailureMessage(label, failureCode),
           500
         )
       );
@@ -288,9 +399,44 @@ function runCommand(command: string, args: string[], label: string) {
   });
 }
 
-function runTool(name: ToolName, args: string[], label: string) {
+function runTool(name: ToolName, args: string[], label: string, failureCode?: string) {
   const tool = getToolCommand(name);
-  return runCommand(tool.command, [...tool.argsPrefix, ...args], label);
+  return runCommand(tool.command, [...tool.argsPrefix, ...args], label, failureCode);
+}
+
+async function runYtDlpWithFallback(
+  args: string[],
+  label: string,
+  failureCode = "AUDIO_PROCESS_FAILED"
+) {
+  let lastError: unknown;
+
+  for (const variant of getYtDlpBaseArgVariants()) {
+    try {
+      logger.debug("yt_dlp.variant_start", { label, variant: variant.name });
+      return await runTool("yt-dlp", [...variant.args, ...args], label, failureCode);
+    } catch (error) {
+      logger.warn("yt_dlp.variant_failed", {
+        label,
+        variant: variant.name,
+        code: publicErrorCode(error)
+      });
+      lastError = error;
+
+      if (
+        error instanceof AppError &&
+        (error.code === "AUDIO_TOOL_UNAVAILABLE" || error.code === "JOB_TIMEOUT")
+      ) {
+        throw error;
+      }
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  throw new AppError(failureCode, toolFailureMessage(label, failureCode), 500);
 }
 
 async function findSourceAudio(jobDir: string) {
@@ -330,10 +476,8 @@ async function downloadSourceAudio(videoId: string, jobDir: string, sourcePatter
 
     try {
       logger.debug("audio_extraction.selector_start", { videoId });
-      await runTool(
-        "yt-dlp",
+      await runYtDlpWithFallback(
         [
-          ...getYtDlpBaseArgs(),
           "--no-continue",
           "--no-part",
           "--restrict-filenames",
@@ -343,12 +487,16 @@ async function downloadSourceAudio(videoId: string, jobDir: string, sourcePatter
           sourcePattern,
           `https://www.youtube.com/watch?v=${videoId}`
         ],
-        "오디오 추출"
+        "오디오 추출",
+        "AUDIO_EXTRACTION_FAILED"
       );
       await findSourceAudio(jobDir);
       return;
     } catch (error) {
-      logger.warn("audio_extraction.selector_failed", { videoId });
+      logger.warn("audio_extraction.selector_failed", {
+        videoId,
+        code: publicErrorCode(error)
+      });
       lastError = error;
     }
   }
@@ -494,16 +642,15 @@ function normalizeAudioAnalysis(value: unknown): AudioAnalysis {
 
 async function ensureVideoWithinDurationLimit(videoId: string) {
   logger.info("duration_check.start", { videoId });
-  const { stdout } = await runTool(
-    "yt-dlp",
+  const { stdout } = await runYtDlpWithFallback(
     [
-      ...getYtDlpBaseArgs(),
       "--print",
       "duration",
       "--skip-download",
       `https://www.youtube.com/watch?v=${videoId}`
     ],
-    "영상 정보 확인"
+    "영상 정보 확인",
+    "AUDIO_METADATA_FAILED"
   );
   let duration: number | null = null;
   try {
@@ -548,22 +695,45 @@ async function analyzeAudio(sourcePath: string): Promise<AudioAnalysis> {
 
   try {
     logger.info("bpm_key_analysis.start");
-    const { stdout } = await runTool("python", [workerPath, sourcePath], "오디오 분석");
+    const { stdout } = await runTool(
+      "python",
+      [workerPath, sourcePath],
+      "오디오 분석",
+      "AUDIO_WORKER_FAILED"
+    );
     const payload = stdout.trim().split(/\r?\n/).at(-1) ?? "{}";
-    const result = normalizeAudioAnalysis(JSON.parse(payload));
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(payload);
+    } catch (error) {
+      logger.warn("bpm_key_analysis.output_parse_failed", {
+        message: compactToolOutput(error instanceof Error ? error.message : `${error}`)
+      });
+      return {
+        bpm: null,
+        bpmConfidence: 0,
+        key: null,
+        keyConfidence: 0,
+        error: "오디오 분석 결과를 해석하지 못했습니다.",
+        errorCode: "AUDIO_WORKER_PARSE_FAILED"
+      };
+    }
+
+    const result = normalizeAudioAnalysis(parsed);
     logger.info("bpm_key_analysis.success", {
       bpm: result.bpm ?? 0,
       keyFound: Boolean(result.key)
     });
     return result;
-  } catch {
-    logger.warn("bpm_key_analysis.failed");
+  } catch (error) {
+    logger.warn("bpm_key_analysis.failed", { code: publicErrorCode(error) });
     return {
       bpm: null,
       bpmConfidence: 0,
       key: null,
       keyConfidence: 0,
-      error: "오디오 BPM/Key 분석을 완료하지 못했습니다."
+      error: "오디오 BPM/Key 분석을 완료하지 못했습니다.",
+      errorCode: publicErrorCode(error)
     };
   }
 }
@@ -586,10 +756,8 @@ function formatUploadDate(value: string) {
 
 export async function processAudioMetadata(videoId: string): Promise<AudioMetadata> {
   logger.info("metadata_fetch.start", { videoId });
-  const { stdout } = await runTool(
-    "yt-dlp",
+  const { stdout } = await runYtDlpWithFallback(
     [
-      ...getYtDlpBaseArgs(),
       "--skip-download",
       "--no-warnings",
       "--print",
@@ -606,7 +774,8 @@ export async function processAudioMetadata(videoId: string): Promise<AudioMetada
       "%(description)#j",
       `https://www.youtube.com/watch?v=${videoId}`
     ],
-    "영상 정보 확인"
+    "영상 정보 확인",
+    "AUDIO_METADATA_FAILED"
   );
   const lines = stdout.trim().split(/\r?\n/);
 
@@ -703,7 +872,8 @@ export async function processAudioJob({
     await runTool(
       "ffmpeg",
       analysisSampleArgs(sourcePath, analysisPath),
-      "분석 샘플 생성"
+      "분석 샘플 생성",
+      "AUDIO_ANALYSIS_SAMPLE_FAILED"
     );
     logger.info("analysis_sample.success", { videoId });
     const internalFilename = `neptune-${fileId}.${format}`;
@@ -715,7 +885,8 @@ export async function processAudioJob({
       runTool(
         "ffmpeg",
         conversionArgs(sourcePath, outputPath, format, quality),
-        "오디오 변환"
+        "오디오 변환",
+        "AUDIO_CONVERSION_FAILED"
       )
     ]);
     logger.info("audio_conversion.success", { videoId, format });
@@ -813,23 +984,45 @@ async function checkTool(commandName: ToolName, args: string[]) {
   }
 }
 
+async function checkAudioWorkerImports() {
+  const workerPath = path.join(process.cwd(), "worker", "analyze_audio.py");
+  if (!existsSync(workerPath)) {
+    logger.warn("audio_worker.health_missing");
+    return false;
+  }
+
+  try {
+    await runTool(
+      "python",
+      ["-c", "import librosa, numpy, scipy, soundfile, audioread; print('ok')"],
+      "audio worker 상태 확인",
+      "AUDIO_WORKER_FAILED"
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function getAudioToolHealth() {
   const now = Date.now();
   if (store.toolHealth && now - store.toolHealth.checkedAt < 60_000) {
     return store.toolHealth;
   }
 
-  const [ffmpeg, python, ytDlp] = await Promise.all([
+  const [ffmpeg, python, ytDlp, audioWorker] = await Promise.all([
     checkTool("ffmpeg", ["-version"]),
     checkTool("python", ["--version"]),
-    checkTool("yt-dlp", ["--version"])
+    checkTool("yt-dlp", ["--version"]),
+    checkAudioWorkerImports()
   ]);
 
   store.toolHealth = {
     checkedAt: now,
     ffmpeg,
     python,
-    ytDlp
+    ytDlp,
+    audioWorker
   };
 
   return store.toolHealth;

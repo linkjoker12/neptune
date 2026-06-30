@@ -102,12 +102,28 @@ export const en = {
         "This video exceeds the maximum duration limit, so audio processing was skipped.",
       AUDIO_ANALYSIS_FAILED:
         "Audio analysis failed, but the converted file and text-based results are shown.",
+      AUDIO_EXTRACTION_FAILED:
+        "Audio extraction failed, so only title, description, and comment results are shown.",
+      AUDIO_ANALYSIS_SAMPLE_FAILED:
+        "The analysis audio sample could not be created, so only title, description, and comment results are shown.",
+      AUDIO_CONVERSION_FAILED:
+        "Audio conversion failed, so no download file was generated. Available text-based results are shown.",
+      AUDIO_WORKER_FAILED:
+        "The audio BPM/Key analysis environment needs attention. The converted file and text-based results are shown.",
+      AUDIO_WORKER_PARSE_FAILED:
+        "The audio analysis result could not be parsed. The converted file and text-based results are shown.",
+      AUDIO_METADATA_FAILED:
+        "Video information for audio processing could not be checked, so only text-based results are shown.",
       AUDIO_PROCESS_FAILED:
         "Audio processing could not be completed, but text-based results are shown.",
       AUDIO_QUEUE_BUSY:
         "Audio jobs are busy right now. Please try again in a moment.",
       AUDIO_TOOL_UNAVAILABLE:
         "Audio tools are unavailable. Check the local installation or Docker environment.",
+      JOB_TIMEOUT:
+        "Audio processing timed out. Try a shorter video or check the server timeout setting.",
+      AUDIO_SOURCE_MISSING:
+        "The source audio file could not be generated, so only text-based results are shown.",
       MISSING_YOUTUBE_API_KEY:
         "YOUTUBE_API_KEY is missing, so description/comment signals are limited. Audio BPM/Key analysis and download will continue."
     }
@@ -172,11 +188,25 @@ export const en = {
       VIDEO_NOT_FOUND: "This YouTube video could not be found.",
       AUDIO_TOOL_UNAVAILABLE:
         "Audio tools could not be executed. Check the local installation or Docker environment.",
+      AUDIO_EXTRACTION_FAILED:
+        "YouTube audio could not be extracted. Check whether the video is public, YouTube access is limited, or yt-dlp is configured correctly.",
+      AUDIO_ANALYSIS_SAMPLE_FAILED:
+        "The analysis audio sample could not be created. Check ffmpeg and the extracted source audio.",
+      AUDIO_CONVERSION_FAILED:
+        "Audio conversion failed. Check ffmpeg and the selected output format.",
+      AUDIO_WORKER_FAILED:
+        "The Python audio analysis worker could not run. Check the worker dependencies.",
+      AUDIO_WORKER_PARSE_FAILED:
+        "The Python worker analysis output could not be parsed.",
+      AUDIO_METADATA_FAILED:
+        "Video information for audio processing could not be checked.",
       AUDIO_PROCESS_FAILED:
         "Audio processing failed. Check whether the video is public and the server tools are installed.",
       AUDIO_SOURCE_MISSING: "The source audio file could not be generated.",
       AUDIO_QUEUE_BUSY:
         "Audio jobs are busy right now. Please try again in a moment.",
+      JOB_TIMEOUT:
+        "Audio processing timed out. Please try again in a moment.",
       INTERNAL_ERROR: "The server had a problem while processing the analysis."
     }
   }

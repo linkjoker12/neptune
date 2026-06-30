@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { processAudioJob, updateDownloadFilename } from "@/lib/audioJob";
 import { buildRecommendation } from "@/lib/confidence";
 import { buildDownloadFilename } from "@/lib/downloadFilename";
-import { getErrorMessage, getMessages, normalizeLocale } from "@/lib/i18n";
+import { getErrorMessage, getMessages, getWarningMessage, normalizeLocale } from "@/lib/i18n";
 import { logger } from "@/lib/logger";
 import { parseVideoId } from "@/lib/parseVideoId";
 import { extractTextAnalysis } from "@/lib/textExtraction";
@@ -77,8 +77,11 @@ export async function POST(request: Request) {
         logger.info("audio_processing.success", { videoId: parsed.videoId });
 
         if (audioAnalysis.error) {
-          warnings.push(t.server.warnings.audioAnalysisFailed);
-          warningCodes.push("AUDIO_ANALYSIS_FAILED");
+          const warningCode = audioAnalysis.errorCode ?? "AUDIO_ANALYSIS_FAILED";
+          warnings.push(
+            getWarningMessage(warningCode, locale) ?? t.server.warnings.audioAnalysisFailed
+          );
+          warningCodes.push(warningCode);
           logs.push(t.server.logs.audioAnalysisFailed);
         } else {
           logs.push(
@@ -95,11 +98,13 @@ export async function POST(request: Request) {
           code: publicAudioError.code,
           status: publicAudioError.status
         });
-        const localizedAudioError = getErrorMessage(
-          publicAudioError.code,
-          locale,
-          publicAudioError.message
-        );
+        const localizedAudioError =
+          getWarningMessage(publicAudioError.code, locale) ??
+          getErrorMessage(
+            publicAudioError.code,
+            locale,
+            publicAudioError.message
+          );
         warnings.push(
           publicAudioError.code === "INTERNAL_ERROR"
             ? t.server.warnings.audioProcessingFailed

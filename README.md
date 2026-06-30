@@ -251,12 +251,19 @@ curl http://localhost:3000/api/health?tools=1
   "checks": {
     "ffmpeg": "ok",
     "python": "ok",
-    "ytDlp": "ok"
+    "ytDlp": "ok",
+    "audioWorker": "ok"
+  },
+  "dependencies": {
+    "ffmpeg": true,
+    "python": true,
+    "ytDlp": true,
+    "audioWorker": true
   }
 }
 ```
 
-API key, 내부 파일 경로, 서버 설정값은 health 응답에 포함하지 않습니다.
+`audioWorker`는 `worker/analyze_audio.py` 파일 존재와 Python 분석 의존성 import를 확인합니다. API key, 내부 파일 경로, 서버 설정값은 health 응답에 포함하지 않습니다.
 
 ## 임시 파일 관리
 
@@ -461,7 +468,36 @@ docker compose up -d --build
 
 일부 영상은 YouTube 정책, 지역 제한, 포맷, 임시 차단 때문에 실패할 수 있습니다. `yt-dlp` 버전을 올린 뒤 Docker image를 다시 빌드하세요. 비공개 영상, 로그인 필요한 영상, DRM 우회는 지원하지 않습니다.
 
-Render 같은 클라우드 호스트에서는 YouTube가 서버 IP를 더 엄격하게 제한할 수 있습니다. 이 프로젝트는 Docker 기본값으로 `YT_DLP_IMPERSONATE=chrome`과 `YT_DLP_EXTRACTOR_ARGS=youtube:player_client=default,ios,android,web`을 사용해 공개 영상 추출 성공률을 높입니다. 그래도 특정 영상이 계속 실패하면 Render Logs에서 `audio_extraction.selector_failed` 또는 `audio_processing.failed` 주변 로그를 확인하세요.
+Render 같은 클라우드 호스트에서는 YouTube가 서버 IP를 더 엄격하게 제한할 수 있습니다. 이 프로젝트는 Docker 기본값으로 `YT_DLP_IMPERSONATE=chrome`과 `YT_DLP_EXTRACTOR_ARGS=youtube:player_client=default,ios,android,web`을 사용해 공개 영상 추출 성공률을 높입니다. 설정된 yt-dlp 옵션이 실패하면 impersonation 제거, extractor args 제거, plain 요청 순서로 다시 시도합니다.
+
+그래도 특정 영상이 계속 실패하면 Render Logs에서 다음 이벤트를 확인하세요.
+
+- `audio_extraction.start`
+- `yt_dlp.variant_failed`
+- `audio_extraction.selector_failed`
+- `tool.failed`
+- `audio_processing.failed`
+
+`tool.failed`에는 API key와 내부 경로를 최대한 제거한 stderr 일부가 남습니다. YouTube의 `Sign in to confirm`, `Video unavailable`, `HTTP Error 403`, `Requested format is not available` 같은 문구가 있으면 yt-dlp/YouTube 접근 문제입니다.
+
+### 배포 후 메타데이터만 보이고 BPM/Key가 비어 있을 때
+
+먼저 health check를 확인합니다.
+
+```bash
+curl https://YOUR_RENDER_DOMAIN/api/health?tools=1
+```
+
+`ffmpeg`, `python`, `ytDlp`, `audioWorker` 중 하나라도 `unavailable`이면 Docker image를 다시 빌드하거나 환경변수 `FFMPEG_BIN`, `PYTHON_BIN`, `YT_DLP_BIN`을 확인하세요.
+
+모든 항목이 `ok`인데 오디오 분석만 실패하면 Render Logs에서 실패 단계 코드를 확인합니다.
+
+- `AUDIO_EXTRACTION_FAILED`: yt-dlp가 YouTube 오디오를 받지 못했습니다.
+- `AUDIO_ANALYSIS_SAMPLE_FAILED`: ffmpeg가 분석용 wav 샘플을 만들지 못했습니다.
+- `AUDIO_WORKER_FAILED`: Python worker 또는 Python 패키지 문제가 있습니다.
+- `AUDIO_WORKER_PARSE_FAILED`: worker 출력 JSON을 해석하지 못했습니다.
+- `AUDIO_CONVERSION_FAILED`: 다운로드용 오디오 변환에 실패했습니다.
+- `JOB_TIMEOUT`: 영상 처리 시간이 서버 제한을 넘었습니다.
 
 ### 영상 길이가 제한을 초과할 때
 
