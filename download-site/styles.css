@@ -86,7 +86,7 @@ a {
 .hero h1 {
   max-width: 1040px;
   margin: 16px auto 0;
-  font-size: clamp(3.15rem, 7vw, 6rem);
+  font-size: clamp(2.7rem, 5.6vw, 4.9rem);
   font-weight: 800;
   letter-spacing: 0;
   line-height: 1.06;
@@ -239,7 +239,7 @@ a {
   }
 
   .hero h1 {
-    font-size: clamp(2.65rem, 11vw, 4.3rem);
+    font-size: clamp(2.25rem, 9.5vw, 3.5rem);
   }
 
   .panel-grid,
